@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iPad Inventory — Copa Airlines</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f5f7;color:#1a1a1a;font-size:14px}
+.hdr{background:#fff;border-bottom:1px solid #e5e7eb;padding:.875rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;gap:1rem;flex-wrap:wrap}
+.hdr-left{display:flex;align-items:center;gap:11px}
+.logo{width:34px;height:34px;background:#185FA5;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+.title{font-size:16px;font-weight:600}
+.subtitle{font-size:11px;color:#6b7280;margin-top:1px}
+.badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;display:flex;align-items:center;gap:4px}
+.badge-live{background:#ecfdf5;color:#047857}
+.dot{width:7px;height:7px;border-radius:50%;background:#10b981;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.metrics{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;padding:1rem 1.5rem;background:#fff;border-bottom:1px solid #e5e7eb}
+@media(max-width:1100px){.metrics{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:600px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.metric{background:#f9fafb;border-radius:10px;padding:.75rem 1rem}
+.metric-label{font-size:11px;color:#6b7280;margin-bottom:3px;font-weight:500}
+.metric-val{font-size:22px;font-weight:700}
+.metric-sub{font-size:11px;color:#9ca3af;margin-top:1px}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e5e7eb;padding:0 1.5rem}
+.tab{font-size:13px;font-weight:500;padding:.625rem 1.1rem;cursor:pointer;color:#6b7280;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:#185FA5;border-bottom-color:#185FA5}
+.toolbar{background:#fff;padding:.75rem 1.5rem;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #e5e7eb}
+.toolbar input[type=text]{flex:1;min-width:200px;font-size:13px;padding:6px 11px;border:1px solid #d1d5db;border-radius:7px;background:#fff;outline:none}
+.toolbar input[type=text]:focus{border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.toolbar select{font-size:13px;padding:6px 9px;border:1px solid #d1d5db;border-radius:7px;background:#fff;color:#374151;cursor:pointer}
+.count-tag{font-size:12px;color:#6b7280;white-space:nowrap;margin-left:auto}
+.table-wrap{overflow-x:auto;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:#f9fafb;padding:8px 13px;text-align:left;font-weight:600;font-size:11px;color:#6b7280;border-bottom:1px solid #e5e7eb;white-space:nowrap;cursor:pointer;user-select:none;text-transform:uppercase;letter-spacing:.04em}
+thead th:hover{color:#374151}
+tbody tr{border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background .1s}
+tbody tr:hover{background:#f0f7ff}
+tbody td{padding:8px 13px;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+.chip{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px}
+.c-green{background:#d1fae5;color:#065f46}.c-blue{background:#dbeafe;color:#1e40af}
+.c-red{background:#fee2e2;color:#991b1b}.c-gray{background:#f3f4f6;color:#4b5563}
+.c-amber{background:#fef3c7;color:#92400e}.c-purple{background:#ede9fe;color:#5b21b6}
+.c-teal{background:#ccfbf1;color:#0f766e}.c-sky{background:#e0f2fe;color:#0369a1}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.5rem;background:#fff;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280}
+.pagination button{font-size:12px;padding:4px 12px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;font-weight:500}
+.pagination button:hover{background:#f9fafb}
+.pagination button:disabled{opacity:.4;cursor:default}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.25);z-index:199;display:none}
+.overlay.show{display:block}
+.panel{position:fixed;top:0;right:0;width:370px;height:100%;background:#fff;border-left:1px solid #e5e7eb;overflow-y:auto;transform:translateX(100%);transition:transform .22s ease;z-index:200;box-shadow:-4px 0 20px rgba(0,0,0,.1)}
+.panel.open{transform:translateX(0)}
+.panel-inner{padding:1.5rem}
+.pcls{float:right;cursor:pointer;font-size:13px;color:#6b7280;border:1px solid #e5e7eb;padding:4px 10px;border-radius:6px;font-weight:500}
+.pcls:hover{background:#f9fafb}
+.avatar{width:52px;height:52px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;color:#1e40af;margin-bottom:12px}
+.panel h2{font-size:16px;font-weight:600;margin-bottom:3px}
+.sec{font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin:1.1rem 0 .5rem;border-top:1px solid #f3f4f6;padding-top:.75rem}
+.fld{margin-bottom:.5rem}
+.flbl{font-size:11px;color:#9ca3af;margin-bottom:1px;font-weight:500}
+.fval{font-size:13px;color:#111827}
+.fmono{font-family:monospace;font-size:12px}
+/* charts */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:1.25rem 1.5rem}
+@media(max-width:700px){.charts-grid{grid-template-columns:1fr}}
+.chart-card{background:#fff;border-radius:11px;padding:1.1rem;border:1px solid #e5e7eb}
+.chart-title{font-size:11px;font-weight:600;color:#6b7280;margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.04em}
+.br{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.bl{font-size:12px;color:#374151;width:115px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bt{flex:1;background:#f3f4f6;border-radius:4px;height:14px;overflow:hidden}
+.bf{height:100%;border-radius:4px}
+.bn{font-size:12px;font-weight:600;color:#374151;width:40px;text-align:right;flex-shrink:0}
+/* upload screen */
+#upload-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;padding:2rem}
+.upload-box{background:#fff;border-radius:16px;border:1px solid #e5e7eb;padding:2.5rem 2rem;max-width:480px;width:100%;text-align:center;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+.upload-box h2{font-size:20px;font-weight:700;margin-bottom:.5rem}
+.upload-box p{font-size:13px;color:#6b7280;margin-bottom:1.75rem;line-height:1.6}
+.drop-zone{border:2px dashed #d1d5db;border-radius:12px;padding:2.5rem 1.5rem;cursor:pointer;transition:border-color .15s,background .15s;position:relative}
+.drop-zone:hover,.drop-zone.drag{border-color:#185FA5;background:#f0f7ff}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:40px;margin-bottom:.75rem}
+.drop-main{font-size:15px;font-weight:600;color:#374151;margin-bottom:.25rem}
+.drop-sub{font-size:12px;color:#9ca3af}
+.progress-wrap{margin-top:1.5rem;display:none}
+.progress-label{font-size:12px;color:#6b7280;margin-bottom:.5rem;text-align:left}
+.progress-track{height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:#185FA5;border-radius:3px;transition:width .3s}
+.progress-status{font-size:12px;color:#6b7280;margin-top:.5rem;text-align:left}
+.sheet-checklist{margin-top:1.25rem;text-align:left;display:none}
+.sheet-row{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 0;border-bottom:1px solid #f3f4f6;color:#374151}
+.sheet-row:last-child{border:none}
+.sheet-icon{font-size:14px;width:20px;text-align:center}
+.err-box{background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:.875rem 1rem;margin-top:1rem;font-size:12px;color:#991b1b;text-align:left;display:none}
+.change-btn{margin-top:1.25rem;font-size:12px;color:#185FA5;cursor:pointer;text-decoration:underline;background:none;border:none}
+</style>
+</head>
+<body>
+
+<!-- UPLOAD SCREEN (shown first) -->
+<div id="upload-screen">
+  <div class="upload-box">
+    <div style="font-size:36px;margin-bottom:.75rem">✈️</div>
+    <h2>iPad Inventory</h2>
+    <p>Sube tu archivo Excel de inventario. La app leerá automáticamente todas las hojas y cruzará los datos, igual que las fórmulas de la hoja MADRE.</p>
+    <div class="drop-zone" id="drop-zone" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)">
+      <input type="file" id="file-input" accept=".xlsx,.xls" onchange="onFileChosen(event)">
+      <div class="drop-icon">📊</div>
+      <div class="drop-main">Arrastra tu Excel aquí</div>
+      <div class="drop-sub">o haz clic para seleccionar · .xlsx / .xls</div>
+    </div>
+    <div class="sheet-checklist" id="sheet-checklist"></div>
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-label" id="progress-label">Leyendo archivo…</div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="progress-status" id="progress-status"></div>
+    </div>
+    <div class="err-box" id="err-box"></div>
+  </div>
+</div>
+
+<!-- MAIN APP (hidden until data loaded) -->
+<div id="main-app" style="display:none">
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="logo">✈</div>
+      <div>
+        <div class="title">iPad Inventory</div>
+        <div class="subtitle">Copa Airlines · <span id="hdr-file"></span></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="last-update" style="font-size:11px;color:#9ca3af"></span>
+      <button onclick="resetApp()" style="font-size:11px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;color:#6b7280">↩ Cambiar archivo</button>
+      <div class="badge badge-live"><div class="dot"></div><span id="live-count">—</span></div>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">Total</div><div class="metric-val" id="m-total">—</div></div>
+    <div class="metric"><div class="metric-label">En uso (CM)</div><div class="metric-val" id="m-inuse" style="color:#185FA5">—</div><div class="metric-sub" id="m-pct"></div></div>
+    <div class="metric"><div class="metric-label">En uso (P5)</div><div class="metric-val" id="m-p5use" style="color:#7c3aed">—</div></div>
+    <div class="metric"><div class="metric-label">Stock CM</div><div class="metric-val" id="m-stock" style="color:#047857">—</div></div>
+    <div class="metric"><div class="metric-label">Stock P5</div><div class="metric-val" id="m-stockp5" style="color:#7c3aed">—</div></div>
+    <div class="metric"><div class="metric-label">Vendidos/Descarte</div><div class="metric-val" id="m-sold" style="color:#6b7280">—</div></div>
+    <div class="metric"><div class="metric-label">ALAS en uso</div><div class="metric-val" id="m-alas" style="color:#047857">—</div></div>
+    <div class="metric"><div class="metric-label">Bloqueados</div><div class="metric-val" id="m-other" style="color:#991b1b">—</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('list',this)">📋 Inventario</div>
+    <div class="tab" onclick="switchTab('charts',this)">📊 Estadísticas</div>
+  </div>
+
+  <!-- INVENTARIO -->
+  <div id="tab-list">
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="🔍  Nombre, serial, Device ID, email, Pilot ID…" oninput="applyFilters()">
+      <select id="f-stock" onchange="applyFilters()">
+        <option value="">Todos los estados</option>
+        <option value="IN USE">En uso</option>
+        <option value="SOLD">Vendido</option>
+        <option value="DISCARD">Descarte</option>
+        <option value="STOLEN">Robado</option>
+        <option value="SEGUNDA">Segunda</option>
+        <option value="STOCK">Stock</option>
+        <option value="STOCK P5">Stock P5</option>
+        <option value="IT MNGMT">IT Mgmt</option>
+        <option value="BLOCKED">Bloqueado</option>
+        <option value="ALAS">ALAS</option>
+        <option value="INOP">INOP</option>
+      </select>
+      <select id="f-airline" onchange="applyFilters()">
+        <option value="">Todas las aerolíneas</option>
+        <option value="CM">Copa (CM)</option>
+        <option value="ALAS">ALAS</option>
+        <option value="P5">Wingo (P5)</option>
+        <option value="SOCC">SOCC</option>
+        <option value="LNA">LNA</option>
+        <option value="ADMIN">Admin</option>
+      </select>
+      <select id="f-model" onchange="applyFilters()">
+        <option value="">Todos los modelos</option>
+        <option value="Ipad 11th M4">iPad Air 11th M4</option>
+        <option value="Ipad 11th M3">iPad Air 11th M3</option>
+        <option value="Ipad 11th M2">iPad Air 11th M2</option>
+        <option value="Ipad 5th Gen">iPad 5th Gen</option>
+        <option value="Ipad 4th Gen">iPad 4th Gen</option>
+      </select>
+      <select id="f-refresh" onchange="applyFilters()">
+        <option value="">Todos los refresh</option>
+        <optgroup label="Estados de refresh">
+          <option value="REFRESHED">REFRESHED</option>
+          <option value="SENT">SENT</option>
+          <option value="NOT SEND">NOT SEND</option>
+          <option value="DO NOT APPLY">DO NOT APPLY</option>
+        </optgroup>
+        <optgroup label="Sin asignación MDM">
+          <option value="SOLD">Vendido</option>
+          <option value="DISCARD">Descarte</option>
+          <option value="STOLEN">Robado</option>
+          <option value="SEGUNDA">Segunda</option>
+          <option value="STOCK">Stock CM</option>
+          <option value="STOCK P5">Stock P5</option>
+          <option value="INOP">INOP</option>
+          <option value="BLOCKED">Bloqueado</option>
+          <option value="IT MNGMT">IT Mgmt</option>
+        </optgroup>
+      </select>
+      <span class="count-tag" id="count-tag"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th onclick="sortBy('serie')">Serial # <span id="s-serie"></span></th>
+          <th onclick="sortBy('deviceId')">Device ID <span id="s-deviceId"></span></th>
+          <th onclick="sortBy('name')">Asignado a <span id="s-name"></span></th>
+          <th onclick="sortBy('pilotId')">Pilot ID <span id="s-pilotId"></span></th>
+          <th onclick="sortBy('model')">Modelo <span id="s-model"></span></th>
+          <th onclick="sortBy('og')">Grupo Operacional <span id="s-og"></span></th>
+          <th onclick="sortBy('airline')">Aerolínea <span id="s-airline"></span></th>
+          <th onclick="sortBy('cargo')">Cargo <span id="s-cargo"></span></th>
+          <th onclick="sortBy('stock')">Estado <span id="s-stock"></span></th>
+          <th onclick="sortBy('refresh')">Refresh <span id="s-refresh"></span></th>
+          <th onclick="sortBy('antiguedad')">Antigüedad <span id="s-antiguedad"></span></th>
+          <th onclick="sortBy('fechaEntregado')">Fecha entregado <span id="s-fechaEntregado"></span></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <button id="prev-btn" onclick="prevPage()" disabled>← Anterior</button>
+      <span id="page-info">—</span>
+      <button id="next-btn" onclick="nextPage()" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div id="tab-charts" style="display:none">
+    <div class="charts-grid" id="charts-section"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="panel" id="panel">
+  <div class="panel-inner">
+    <button class="pcls" onclick="closePanel()">✕ Cerrar</button>
+    <div id="panel-content"></div>
+  </div>
+</div>
+
+<script>
+let DATA = [], filtered = [];
+let page = 0;
+const PAGE = 50;
+let sortCol = 'deviceId', sortDir = 1;
+
+// ── Drag & drop on upload screen ──────────────────────────────────────────
+function dzOver(e){ e.preventDefault(); document.getElementById('drop-zone').classList.add('drag'); }
+function dzLeave(){ document.getElementById('drop-zone').classList.remove('drag'); }
+function dzDrop(e){ e.preventDefault(); dzLeave(); const f=e.dataTransfer.files[0]; if(f) loadExcel(f); }
+function onFileChosen(e){ const f=e.target.files[0]; if(f) loadExcel(f); }
+window.addEventListener('DOMContentLoaded', () => {
+  fetch('https://raw.githubusercontent.com/catcaballero/catcaballero.github.io/main/inventariodeipads1.xlsx')
+    .then(r => r.blob())
+    .then(blob => {
+      const file = new File([blob], 'inventariodeipads1.xlsx');
+      loadExcel(file);
+    })
+    .catch(() => {
+      // Si no encuentra el archivo, muestra la pantalla de carga normal
+      document.getElementById('upload-screen').style.display = 'flex';
+    });
+});
+
+// ── Load & parse Excel ────────────────────────────────────────────────────
+function loadExcel(file){
+  const pw = document.getElementById('progress-wrap');
+  const cl = document.getElementById('sheet-checklist');
+  const eb = document.getElementById('err-box');
+  pw.style.display = 'block'; cl.style.display = 'none'; eb.style.display = 'none';
+  setP(5, 'Leyendo archivo…', '');
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      setP(15, 'Parseando hojas…', '');
+      // First pass: read only sheet names (fast, no data)
+      const wbMeta = XLSX.read(e.target.result, {type:'array', bookSheets:true});
+      const found = wbMeta.SheetNames;
+
+      // Solo necesitamos la hoja MADRE — tiene todas las columnas calculadas
+      setP(20, 'Cargando hoja MADRE…', '');
+      const wb = XLSX.read(e.target.result, {
+        type:'array',
+        cellDates:true,
+        sheets: ['MADRE'],
+        sheetRows: 10000
+      });
+
+      if(!found.includes('MADRE')){
+        showErr('El archivo no contiene la hoja MADRE.');
+        return;
+      }
+
+      setP(60, 'Leyendo MADRE…', '');
+      const madre = sheetToArrSafe(wb, 'MADRE');
+
+      setP(80, 'Construyendo inventario…', '');
+      const result = buildInventory(madre);
+
+      setP(95, 'Construyendo tabla…', '');
+      DATA = result;
+      document.getElementById('hdr-file').textContent = file.name;
+      document.getElementById('last-update').textContent = 'Actualizado: '+new Date().toLocaleTimeString('es-PA');
+      document.getElementById('live-count').textContent = result.length.toLocaleString()+' dispositivos';
+      updateMetrics();
+      applyFilters();
+
+      setP(100, '¡Listo!', result.length.toLocaleString()+' registros procesados desde '+wb.SheetNames.length+' hojas');
+      setTimeout(()=>{
+        document.getElementById('upload-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+      }, 800);
+
+    } catch(err){
+      showErr('Error al procesar el archivo: '+err.message);
+      console.error(err);
+    }
+  };
+  reader.onerror = ()=>showErr('No se pudo leer el archivo.');
+  reader.readAsArrayBuffer(file);
+}
+
+// Read a sheet safely — caps at 10000 rows to handle Excel sheets
+// bloated with 1M empty rows (common in MDM/ABM exports)
+function sheetToArrSafe(wb, name){
+  const ws = wb.Sheets[name];
+  if(!ws) return [];
+  const ref = ws['!ref'];
+  if(!ref) return [];
+  // Trim declared range to 10000 rows max before parsing
+  const range = XLSX.utils.decode_range(ref);
+  if(range.e.r > 9999){
+    range.e.r = 9999;
+    ws['!ref'] = XLSX.utils.encode_range(range);
+  }
+  return XLSX.utils.sheet_to_json(ws, {defval:'', blankrows:false});
+}
+
+// Fuzzy sheet finder — matches by substring (handles encoding differences with accented chars)
+function sheetToArrFuzzy(wb, found, keyword){
+  const kl = keyword.toLowerCase();
+  const name = found.find(n => n.toLowerCase().includes(kl));
+  if(!name) return [];
+  return sheetToArr(wb, name);
+}
+
+function setP(pct, label, status){
+  document.getElementById('progress-fill').style.width = pct+'%';
+  document.getElementById('progress-label').textContent = label;
+  document.getElementById('progress-status').textContent = status;
+}
+
+function showErr(msg){
+  const eb = document.getElementById('err-box');
+  eb.textContent = '⚠ '+msg; eb.style.display = 'block';
+  setP(0,'','');
+}
+
+// ── Core: lee todo directo de la hoja MADRE ───────────────────────────────
+// MADRE ya tiene todas las columnas calculadas por Excel:
+// Serie, Device ID, imei, Status, Modelo Ipad, Name, EMAIL,
+// Pilot ID, Antigüedad, Stock, OG, CARGO, AIRLINE, REFRESH, fecha entregado
+function buildInventory(madre){
+  const result = [];
+  madre.forEach(row=>{
+    const serie = ns(row['Serie']||'');
+    if(!serie) return;
+
+    const rawId = row['Device ID']||'';
+    const deviceId = rawId!=='' ? String(typeof rawId==='number' ? Math.round(rawId) : rawId).trim() : '';
+
+    const rawImei = row['imei']||'';
+    const imei = rawImei!=='' ? String(typeof rawImei==='number' ? Math.round(rawImei) : rawImei).trim() : '';
+
+    const rawPilot = row['Pilot ID']||'';
+    const pilotId = rawPilot!=='' ? String(typeof rawPilot==='number' ? Math.round(rawPilot) : rawPilot).trim() : '';
+
+    const rawAnt = row['Antigüedad']||row['Antiguedad']||'';
+    const antiguedad = rawAnt!=='' ? String(typeof rawAnt==='number' ? Math.round(rawAnt) : rawAnt).trim() : '';
+
+    result.push({
+      serie,
+      deviceId,
+      imei,
+      model:           ns(row['Modelo Ipad']||''),
+      name:            ns(row['Name']||''),
+      email:           ns(row['EMAIL']||'').toLowerCase(),
+      pilotId,
+      cargo:           ns(row['CARGO']||''),
+      antiguedad,
+      stock:           ns(row['Stock']||row['stock']||''),
+      og:              ns(row['OG']||'') || 'not assigned',
+      airline:         ns(row['AIRLINE ']||row['AIRLINE']||''),
+      refresh:         ns(row['REFRESH']||''),
+      fechaEntregado:  fmtDate(row['fecha entregado']),
+    });
+  });
+  return result;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+const ns = v => (v===null||v===undefined) ? '' : String(v).trim();
+const nl = v => ns(v).toLowerCase();
+
+function fmtDate(v){
+  if(!v) return '';
+  if(v instanceof Date) return v.toISOString().slice(0,10);
+  return ns(v).slice(0,10);
+}
+
+function resetApp(){
+  DATA=[]; filtered=[];
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('upload-screen').style.display='flex';
+  document.getElementById('progress-wrap').style.display='none';
+  document.getElementById('sheet-checklist').style.display='none';
+  document.getElementById('err-box').style.display='none';
+  document.getElementById('file-input').value='';
+}
+
+// ── Metrics ───────────────────────────────────────────────────────────────
+function updateMetrics(){
+  const t    = DATA.length;
+  const cmUse= DATA.filter(d=>d.stock==='IN USE' && d.airline==='CM').length;
+  const p5Use= DATA.filter(d=>d.stock==='IN USE' && d.airline==='P5').length;
+  const alUse= DATA.filter(d=>d.stock==='IN USE' && d.airline==='ALAS').length;
+  const allUse=DATA.filter(d=>d.stock==='IN USE').length;
+  const stCM = DATA.filter(d=>d.stock==='STOCK').length;
+  const stP5 = DATA.filter(d=>d.stock==='STOCK P5').length;
+  const sl   = DATA.filter(d=>d.stock==='SOLD'||d.stock==='DISCARD').length;
+  const other= DATA.filter(d=>d.stock==='BLOCKED'||d.stock==='ALAS BLOCKED').length;
+  const $=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  $('m-total',   t.toLocaleString());
+  $('m-inuse',   cmUse.toLocaleString());
+  $('m-pct',     Math.round(allUse/t*100)+'% en uso total');
+  $('m-p5use',   p5Use.toLocaleString());
+  $('m-stock',   stCM.toLocaleString());
+  $('m-stockp5', stP5.toLocaleString());
+  $('m-sold',    sl.toLocaleString());
+  $('m-alas',    alUse.toLocaleString());
+  $('m-other',   other.toLocaleString());
+}
+
+// ── Filters & sort ────────────────────────────────────────────────────────
+function applyFilters(){
+  const q  = nl(document.getElementById('search').value||'');
+  const fS = document.getElementById('f-stock').value;
+  const fA = document.getElementById('f-airline').value;
+  const fM = document.getElementById('f-model').value;
+  const fR = document.getElementById('f-refresh').value;
+  filtered = DATA.filter(d=>{
+    if(fS && d.stock!==fS) return false;
+    if(fA && d.airline!==fA) return false;
+    if(fM && d.model!==fM) return false;
+    if(fR && d.refresh!==fR) return false;
+    if(q){
+      const h=(d.name+d.serie+d.deviceId+d.email+d.pilotId+d.og+d.imei+d.cargo).toLowerCase();
+      if(!h.includes(q)) return false;
+    }
+    return true;
+  });
+  sortFiltered(); page=0; render();
+}
+
+function sortFiltered(){
+  filtered.sort((a,b)=>{
+    let va=a[sortCol]||'', vb=b[sortCol]||'';
+    if(['antiguedad','deviceId','pilotId'].includes(sortCol)){va=parseInt(va)||0;vb=parseInt(vb)||0;}
+    else{va=va.toLowerCase();vb=vb.toLowerCase();}
+    return va<vb?-sortDir:va>vb?sortDir:0;
+  });
+}
+
+function sortBy(col){
+  if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=1;}
+  document.querySelectorAll('thead th span').forEach(s=>s.textContent='');
+  const el=document.getElementById('s-'+col);
+  if(el) el.textContent=sortDir===1?' ↑':' ↓';
+  sortFiltered(); render();
+}
+
+// ── Chips ─────────────────────────────────────────────────────────────────
+function sChip(s){
+  if(!s||s==='#N/A') return '<span class="chip c-gray">—</span>';
+  const m={'IN USE':'c-green','SOLD':'c-gray','DISCARD':'c-red','STOLEN':'c-red','SEGUNDA':'c-amber',
+           'BLOCKED':'c-red','STOCK P5':'c-blue','STOCK':'c-blue','IT MNGMT':'c-purple',
+           'ADMIN':'c-blue','ALAS':'c-green','ALAS NI':'c-amber','INOP':'c-red'};
+  return`<span class="chip ${m[s]||'c-gray'}">${s}</span>`;
+}
+function aChip(a){
+  if(!a) return '—';
+  const m={'CM':'c-blue','ALAS':'c-green','P5':'c-purple','SOCC':'c-amber','LNA':'c-gray','ADMIN':'c-gray'};
+  return`<span class="chip ${m[a]||'c-gray'}">${a}</span>`;
+}
+function rChip(r){
+  if(!r) return '—';
+  const m={
+    'REFRESHED':'c-green','SENT':'c-teal','NOT SEND':'c-amber','DO NOT APPLY':'c-gray',
+    // Stock states that mirror into refresh when no MDM
+    'IN USE':'c-green','STOCK':'c-blue','STOCK P5':'c-purple','SOLD':'c-gray',
+    'DISCARD':'c-red','STOLEN':'c-red','SEGUNDA':'c-amber','BLOCKED':'c-red',
+    'INOP':'c-red','IT MNGMT':'c-purple','ALAS':'c-green','ALAS NI':'c-amber',
+    'ALAS BLOCKED':'c-red','ADMIN':'c-blue'
+  };
+  return`<span class="chip ${m[r]||'c-gray'}">${r}</span>`;
+}
+
+// ── Render table ──────────────────────────────────────────────────────────
+function render(){
+  const start=page*PAGE, slice=filtered.slice(start,start+PAGE);
+  document.getElementById('tbody').innerHTML = slice.length
+    ? slice.map((d,i)=>{
+        const og=(d.og&&d.og!=='not assigned')?d.og:'—';
+        const nm=d.name||'<span style="color:#9ca3af">Sin asignar</span>';
+        return`<tr onclick="openPanel(${start+i})">
+          <td style="font-family:monospace;font-size:12px;color:#374151">${d.serie||'—'}</td>
+          <td style="font-weight:600">${d.deviceId||'—'}</td>
+          <td>${nm}</td>
+          <td style="color:#6b7280">${d.pilotId||'—'}</td>
+          <td>${d.model||'—'}</td>
+          <td>${og}</td>
+          <td>${aChip(d.airline)}</td>
+          <td style="color:#6b7280">${d.cargo||'—'}</td>
+          <td>${sChip(d.stock)}</td>
+          <td>${rChip(d.refresh)}</td>
+          <td style="color:#6b7280">${d.antiguedad||'—'}</td>
+          <td style="color:#6b7280">${d.fechaEntregado||'—'}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="12" style="text-align:center;padding:2rem;color:#9ca3af">Sin resultados</td></tr>';
+
+  const total=filtered.length, pages=Math.ceil(total/PAGE)||1;
+  document.getElementById('count-tag').textContent=total.toLocaleString()+' dispositivos';
+  document.getElementById('page-info').textContent=`Página ${page+1} de ${pages}`;
+  document.getElementById('prev-btn').disabled=page===0;
+  document.getElementById('next-btn').disabled=page>=pages-1;
+}
+
+function prevPage(){if(page>0){page--;render();}}
+function nextPage(){if(page<Math.ceil(filtered.length/PAGE)-1){page++;render();}}
+
+// ── Detail panel ──────────────────────────────────────────────────────────
+function openPanel(idx){
+  const d=filtered[idx]; if(!d) return;
+  const ini=d.name?d.name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase():'?';
+  document.getElementById('panel-content').innerHTML=`
+    <div class="avatar">${ini}</div>
+    <h2>${d.name||'Sin asignar'}</h2>
+    ${d.pilotId?`<p style="font-size:12px;color:#6b7280;margin-top:2px;margin-bottom:8px">Pilot ID: ${d.pilotId}</p>`:''}
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${sChip(d.stock)} ${rChip(d.refresh)}</div>
+    <div class="sec">Dispositivo</div>
+    <div class="fld"><div class="flbl">Serial #</div><div class="fval fmono">${d.serie||'—'}</div></div>
+    <div class="fld"><div class="flbl">Device ID</div><div class="fval">${d.deviceId||'—'}</div></div>
+    <div class="fld"><div class="flbl">IMEI</div><div class="fval fmono">${d.imei||'—'}</div></div>
+    <div class="fld"><div class="flbl">Modelo</div><div class="fval">${d.model||'—'}</div></div>
+    <div class="fld"><div class="flbl">Fecha entregado</div><div class="fval">${d.fechaEntregado||'—'}</div></div>
+    <div class="sec">Asignación</div>
+    <div class="fld"><div class="flbl">Email</div><div class="fval" style="color:#185FA5;word-break:break-all;font-size:12px">${d.email||'—'}</div></div>
+    <div class="fld"><div class="flbl">Grupo Operacional</div><div class="fval">${(d.og&&d.og!=='not assigned')?d.og:'—'}</div></div>
+    <div class="fld"><div class="flbl">Cargo</div><div class="fval">${d.cargo||'—'}</div></div>
+    <div class="fld"><div class="flbl">Aerolínea</div><div class="fval">${aChip(d.airline)}</div></div>
+    <div class="fld"><div class="flbl">Antigüedad (años)</div><div class="fval">${d.antiguedad||'—'}</div></div>
+    <div class="sec">Refresh</div>
+    <div class="fld"><div class="flbl">Estado</div><div class="fval">${rChip(d.refresh)}</div></div>
+  `;
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+function closePanel(){
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────
+function renderCharts(){
+  const sc={},ac={},mc={},oc={},rc={};
+  DATA.forEach(d=>{
+    if(d.stock)   sc[d.stock]  =(sc[d.stock]  ||0)+1;
+    if(d.airline) ac[d.airline]=(ac[d.airline]||0)+1;
+    if(d.model&&d.model!=='N/A') mc[d.model]=(mc[d.model]||0)+1;
+    if(d.og&&d.og!=='not assigned') oc[d.og]=(oc[d.og]||0)+1;
+    if(d.refresh) rc[d.refresh]=(rc[d.refresh]||0)+1;
+  });
+  const sC={'IN USE':'#185FA5','SOLD':'#9ca3af','DISCARD':'#ef4444','SEGUNDA':'#f59e0b','STOLEN':'#7f1d1d','STOCK P5':'#047857','STOCK':'#047857','IT MNGMT':'#7c3aed','ALAS':'#065f46','ALAS NI':'#92400e','BLOCKED':'#991b1b','INOP':'#dc2626'};
+  const aC={'CM':'#185FA5','ALAS':'#047857','P5':'#7c3aed','SOCC':'#f59e0b','LNA':'#6b7280','ADMIN':'#9ca3af'};
+  const mC={'Ipad 11th M4':'#0ea5e9','Ipad 11th M3':'#185FA5','Ipad 11th M2':'#047857','Ipad 5th Gen':'#7c3aed','Ipad 4th Gen':'#f59e0b'};
+  const rC={'REFRESHED':'#047857','SENT':'#0f766e','NOT SEND':'#f59e0b','DO NOT APPLY':'#6b7280','STOCK':'#185FA5','CITA':'#0369a1'};
+  function mkC(title,entries,cmap){
+    const max=Math.max(...entries.map(e=>e[1]),1);
+    return`<div class="chart-card"><div class="chart-title">${title}</div>${entries.map(([k,v])=>`<div class="br"><div class="bl" title="${k}">${k}</div><div class="bt"><div class="bf" style="width:${Math.round(v/max*100)}%;background:${cmap[k]||'#6b7280'}"></div></div><div class="bn">${v.toLocaleString()}</div></div>`).join('')}</div>`;
+  }
+  const sOrd=['IN USE','SOLD','DISCARD','SEGUNDA','STOLEN','STOCK P5','STOCK','IT MNGMT','ALAS','ALAS NI','BLOCKED','INOP'];
+  const rOrd=['REFRESHED','SENT','NOT SEND','DO NOT APPLY','STOCK','CITA'];
+  document.getElementById('charts-section').innerHTML=
+    mkC('Estado',sOrd.map(k=>[k,sc[k]||0]).filter(e=>e[1]>0),sC)+
+    mkC('Aerolínea',Object.entries(ac).sort((a,b)=>b[1]-a[1]),aC)+
+    mkC('Modelo',['Ipad 11th M4','Ipad 11th M3','Ipad 11th M2','Ipad 5th Gen','Ipad 4th Gen'].map(k=>[k,mc[k]||0]).filter(e=>e[1]>0),mC)+
+    mkC('Estado Refresh',rOrd.map(k=>[k,rc[k]||0]).filter(e=>e[1]>0),rC)+
+    mkC('Grupos Operacionales (top 8)',Object.entries(oc).sort((a,b)=>b[1]-a[1]).slice(0,8),{});
+}
+
+function switchTab(tab,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['list','charts'].forEach(t=>document.getElementById('tab-'+t).style.display='none');
+  document.getElementById('tab-'+tab).style.display='block';
+  if(tab==='charts') renderCharts();
+}
+</script>
+</body>
+</html>
