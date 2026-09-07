@@ -642,8 +642,8 @@ function mkProyeccionNIChart(){
   // sin inventar ni renombrar valores). Orden de apilado: abajo → arriba.
   const seriesDefs=[
     {key:'CP UPGRADE',            name:'CP Upgrade',            color:'#1F4E5F'},
-    {key:'CP INICIAL COMPLETO',   name:'CP Inicial Completo',   color:'#E07B39'},
-    {key:'FO INICIAL COMPLETO',   name:'FO Inicial Completo',   color:'#1E5631'}
+    {key:'CP INICIAL',   name:'CP Inicial',   color:'#E07B39'},
+    {key:'FO INICIAL',   name:'FO Inicial',   color:'#1E5631'}
   ];
 
   const mesKeyRaw = Object.keys(PROY_NI[0]||{}).find(k=>nl(k)==='mes') || 'MES';
