@@ -463,9 +463,9 @@ function updateMetrics(){
   const $=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   $('m-total',   t.toLocaleString());
   $('m-inuse',   cmUse.toLocaleString());
-  $('m-pct',     Math.round(allUse/t*100)+'% en uso total');
+  $('m-pct',     Math.round(cmUse/allUse*100)+'% del total en uso');
   $('m-p5use',   p5Use.toLocaleString());
-  $('m-pct',     Math.round(allUse/t*100)+'% en uso total');
+  $('m-pct-p5',  Math.round(p5Use/allUse*100)+'% del total en uso');
   $('m-stock',   stCM.toLocaleString());
   $('m-stockp5', stP5.toLocaleString());
   $('m-sold',    sl.toLocaleString());
