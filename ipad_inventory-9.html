@@ -143,7 +143,7 @@ tbody td{padding:8px 13px;white-space:nowrap;max-width:180px;overflow:hidden;tex
     <div class="metric"><div class="metric-label">En uso (P5)</div><div class="metric-val" id="m-p5use" style="color:#7c3aed">—</div><div class="metric-sub" id="m-pct-p5"></div></div>
     <div class="metric"><div class="metric-label">Stock CM</div><div class="metric-val" id="m-stock" style="color:#047857">—</div></div>
     <div class="metric"><div class="metric-label">Stock P5</div><div class="metric-val" id="m-stockp5" style="color:#7c3aed">—</div></div>
-    <div class="metric"><div class="metric-label">Vendidos/Descarte</div><div class="metric-val" id="m-sold" style="color:#6b7280">—</div></div>
+    <div class="metric"><div class="metric-label">iPads Usados</div><div class="metric-val" id="m-segunda" style="color:#6b7280">—</div></div>
     <div class="metric"><div class="metric-label">ALAS en uso</div><div class="metric-val" id="m-alas" style="color:#047857">—</div></div>
     <div class="metric"><div class="metric-label">Bloqueados</div><div class="metric-val" id="m-other" style="color:#991b1b">—</div></div>
   </div>
@@ -468,7 +468,7 @@ function updateMetrics(){
   $('m-pct-p5',  Math.round(p5Use/allUse*100)+'% del total en uso');
   $('m-stock',   stCM.toLocaleString());
   $('m-stockp5', stP5.toLocaleString());
-  $('m-sold',    sl.toLocaleString());
+  $('m-segunda',    sl.toLocaleString());
   $('m-alas',    alUse.toLocaleString());
   $('m-other',   other.toLocaleString());
 }
