@@ -458,7 +458,7 @@ function updateMetrics(){
   const allUse=DATA.filter(d=>d.stock==='IN USE').length;
   const stCM = DATA.filter(d=>d.stock==='STOCK').length;
   const stP5 = DATA.filter(d=>d.stock==='STOCK P5').length;
-  const sl   = DATA.filter(d=>d.stock==='SOLD'||d.stock==='DISCARD').length;
+  const sl   = DATA.filter(d=>d.stock==='SEGUNDA').length;
   const other= DATA.filter(d=>d.stock==='BLOCKED'||d.stock==='ALAS BLOCKED').length;
   const $=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   $('m-total',   t.toLocaleString());
